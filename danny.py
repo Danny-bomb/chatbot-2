@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
-OPENROUTER_API_KEY= "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"
+OPENROUTER_API_KEY= "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"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
