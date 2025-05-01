@@ -68,7 +68,7 @@ st.sidebar.markdown("""
 
 ### ⚙️ Model Options
 - **Local Ollama**: 
-  - llama3.1:8b: More powerful but slower
+  - llama3:8b: More powerful but slower
   - deepseek-r1:1.5b: Faster responses
 - **OpenRouter**: Cloud-based model with consistent performance
 
@@ -96,19 +96,19 @@ if st.session_state.selected_model == "Local Ollama":
 
     # Ollama model selection with available models
     if 'ollama_model' not in st.session_state:
-        st.session_state.ollama_model = "llama3.1:8b"
+        st.session_state.ollama_model = "llama3:8b"
     
     ollama_model = st.sidebar.selectbox(
         "Choose Ollama Model",
-        ["llama3.1:8b", "deepseek-r1:1.5b"],
+        ["llama3:8b", "deepseek-r1:1.5b"],
         index=0,
         key="ollama_model_selector"
     )
     st.session_state.ollama_model = ollama_model
     
     # Add model information
-    if st.session_state.ollama_model == "llama3.1:8b":
-        st.sidebar.info("Using llama3.1:8b - Powerful model with excellent reasoning capabilities")
+    if st.session_state.ollama_model == "llama3:8b":
+        st.sidebar.info("Using llama3:8b - Powerful model with excellent reasoning capabilities")
         st.sidebar.warning("This is a large model and may take longer to process. Please be patient.", icon="⚠️")
     else:
         st.sidebar.info("Using deepseek-r1:1.5b - Fast and efficient model for quick responses")
@@ -502,7 +502,7 @@ def get_pdf_image(pdf_path):
         return None
 
 # ----------- Ollama API Communication Logic -----------
-def call_ollama_api(prompt, context, model="llama3.1:8b", pdf_path=None):
+def call_ollama_api(prompt, context, model="llama3:8b", pdf_path=None):
     """Call the Ollama API with the specified model"""
     API_URL = "http://127.0.0.1:11434/api/chat"
     
@@ -553,7 +553,7 @@ Remember: The content is your main source, but you can enhance the response with
     try:
         logger.info(f"Sending request to Ollama API at {API_URL}")
         # Adjust timeout based on model size
-        timeout = 180 if model == "llama3.1:8b" else 60
+        timeout = 180 if model == "llama3:8b" else 60
         response = requests.post(API_URL, json=payload, timeout=(timeout, timeout))
         logger.info(f"Ollama API response status: {response.status_code}")
         
@@ -609,8 +609,8 @@ def response_generator(text, prompt, pdf_path=None):
                 logger.info(f"Using Ollama model: {st.session_state.ollama_model} for general question")
                 st.info("Using local Ollama model for general question.")
                 
-                if st.session_state.ollama_model == "llama3.1:8b":
-                    st.warning("Using the larger llama3.1:8b model. This may take longer to process. Please be patient.", icon="⚠️")
+                if st.session_state.ollama_model == "llama3:8b":
+                    st.warning("Using the larger llama3:8b model. This may take longer to process. Please be patient.", icon="⚠️")
                 
                 # Prepare general question prompt
                 messages = [
@@ -632,7 +632,7 @@ def response_generator(text, prompt, pdf_path=None):
                 response = requests.post(
                     "http://127.0.0.1:11434/api/chat",
                     json=payload,
-                    timeout=180 if st.session_state.ollama_model == "llama3.1:8b" else 60
+                    timeout=180 if st.session_state.ollama_model == "llama3:8b" else 60
                 )
                 
                 if response.status_code == 200:
@@ -716,8 +716,8 @@ def response_generator(text, prompt, pdf_path=None):
             logger.info(f"Using Ollama model: {st.session_state.ollama_model}")
             st.info("Using local Ollama model. Responses will be based on the PDF content.")
             
-            if st.session_state.ollama_model == "llama3.1:8b":
-                st.warning("Using the larger llama3.1:8b model. This may take longer to process. Please be patient.", icon="⚠️")
+            if st.session_state.ollama_model == "llama3:8b":
+                st.warning("Using the larger llama3:8b model. This may take longer to process. Please be patient.", icon="⚠️")
             
             ollama_response = call_ollama_api(prompt, context, st.session_state.ollama_model, pdf_path)
             if ollama_response and not ollama_response.startswith("Error:") and not ollama_response.startswith("Could not connect"):
