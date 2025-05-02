@@ -501,13 +501,18 @@ def get_pdf_image(pdf_path):
         st.error(f"Error extracting PDF image: {e}")
         return None
 
-# ----------- Dynamic System Prompt Generator -----------
 def build_system_prompt(user_prompt):
-    if any(kw in user_prompt.lower() for kw in ["just list", "no explanation", "short answer", "only recommend"]):
+    if any(kw in user_prompt.lower() for kw in ["just list", "no explanation", "short answer", "only recommend", "budget friendly cars"]):
         return """
 You are a helpful assistant. Only list relevant car names, prices, and one key feature.
-Do NOT include reasoning, thought processes, or long descriptions.
+Do NOT include reasoning, thought processes, or descriptions of how you're thinking.
+Do NOT include <think> tags or internal reflections.
 Use a simple bullet list format.
+
+Example format:
+- Car Name
+  - Price: RM xx,xxx
+  - Key Feature: ...
 """
     else:
         return """
@@ -521,9 +526,8 @@ Your task is to:
 5. Include specific prices for car recommendations
 6. Ensure student car recommendations are within RM 50,000
 7. Avoid saying "not specified in PDF, but generally..."
-
-The PDF content is your main source.
 """
+
 
 
 # ----------- Ollama API Communication Logic -----------
@@ -540,7 +544,7 @@ def call_ollama_api(prompt, context, model="llama3:8b", pdf_path=None):
         },
         {
             "role": "user",
-            "content": f"Please provide an answer based primarily on the content, supplemented with relevant additional information if needed. For car recommendations, please include specific prices and ensure they are within the student budget of RM 50,000: {prompt}"
+            "content": f"Please provide only the final answer. Do NOT include <think> sections or internal thought processes. Format your response like a bullet list: {prompt}"
         }
     ]
     
