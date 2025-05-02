@@ -9,8 +9,6 @@ from io import BytesIO
 import json
 import logging
 from dotenv import load_dotenv
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-
 
 # Load environment variables from .env file
 load_dotenv()
@@ -780,63 +778,3 @@ if prompt := st.chat_input("Ask me anything..."):
     with st.chat_message("assistant"):
         st.markdown(response['answer'])
     st.session_state.messages.append({"role": "assistant", "content": response['answer']})
-
-#------------------Metrics---------------------------------------------------
-
-# Your original code for uploading and interacting with the PDF
-st.title("Car Knowledge Chatbot")
-
-uploaded_pdf = st.file_uploader("Upload a PDF", type=["pdf"])
-
-if uploaded_pdf:
-    with st.spinner("Extracting text from PDF..."):
-        extracted_text = extract_text_from_pdf(uploaded_pdf)
-
-    st.subheader("Ask a question about cars:")
-    user_question = st.text_input("Your Question")
-
-    if user_question:
-        answer = response_generator(extracted_text, user_question, pdf_path=uploaded_pdf)
-        st.write(f"**Answer:** {answer['answer']}")
-
-    queries = [
-        "What engine does the Honda Civic 1.5L RS use?",
-        "What is the fuel consumption of the Civic e:HEV RS?",
-        "Does the Civic support Honda Sensing?",
-    ]
-
-    true_answers = [
-        "1.5L VTEC Turbo engine",
-        "4.0L/100km",
-        "Yes, Honda Sensing is included"
-    ]
-
-    def ask_chatbot(query):
-        response = response_generator(extracted_text, query, pdf_path=None)
-        return response['answer']
-
-    predicted_answers = [ask_chatbot(query) for query in queries]
-
-    binary_true = [1] * len(true_answers)
-    binary_pred = [1 if true.lower() in pred.lower() else 0 for true, pred in zip(true_answers, predicted_answers)]
-
-    accuracy = accuracy_score(binary_true, binary_pred)
-    precision = precision_score(binary_true, binary_pred, zero_division=0)
-    recall = recall_score(binary_true, binary_pred, zero_division=0)
-    f1 = f1_score(binary_true, binary_pred, zero_division=0)
-
-    st.subheader("Evaluation Results")
-    st.table({
-        "Metric": ["Accuracy", "F1 Score", "Recall", "Precision"],
-        "Score": [accuracy, f1, recall, precision]
-    })
-
-    for i, (q, true, pred) in enumerate(zip(queries, true_answers, predicted_answers)):
-        st.write(f"**Q{i+1}:** {q}")
-        st.write(f"- Ground Truth: {true}")
-        st.write(f"- Predicted: {pred}")
-
-
-
-
-
