@@ -97,16 +97,21 @@ if st.session_state.selected_model == "Local Ollama":
     # Ollama model selection with available models
     if 'ollama_model' not in st.session_state:
         st.session_state.ollama_model = "llama3:8b"
+
+    
     
     ollama_model = st.sidebar.selectbox(
+        
         "Choose Ollama Model",
-        ["llama3:8b", "deepseek-r1:1.5b", "mistral:latest"],  # <-- correct names
-       index=0,
+        
+        ["llama3:8b", "deepseek-r1:1.5b", "mistral:latest"],
+        # <-- correct names
+        index=0,
+        
         key="ollama_model_selector"
-      )
-
+    )
     st.session_state.ollama_model = ollama_model
-    
+        
     # Add model information
     if st.session_state.ollama_model == "llama3:8b":
         st.sidebar.info("Using llama3:8b - Powerful model with excellent reasoning capabilities")
