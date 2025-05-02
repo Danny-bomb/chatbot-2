@@ -70,6 +70,7 @@ st.sidebar.markdown("""
 - **Local Ollama**: 
   - llama3:8b: More powerful but slower
   - deepseek-r1:1.5b: Faster responses
+  - mistral:lastest: good mix of power and speed
 - **OpenRouter**: Cloud-based model with consistent performance
 
 ### 💡 Tips
