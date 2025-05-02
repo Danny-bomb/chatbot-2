@@ -522,7 +522,6 @@ ONLY return the list. Nothing else.
         return """[your existing detailed system prompt here]"""
 
 
-
 # ----------- Ollama API Communication Logic -----------
 def call_ollama_api(prompt, context, model="llama3:8b", pdf_path=None):
     """Call the Ollama API with the specified model"""
