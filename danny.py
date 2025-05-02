@@ -501,6 +501,31 @@ def get_pdf_image(pdf_path):
         st.error(f"Error extracting PDF image: {e}")
         return None
 
+# ----------- Dynamic System Prompt Generator -----------
+def build_system_prompt(user_prompt):
+    if any(kw in user_prompt.lower() for kw in ["just list", "no explanation", "short answer", "only recommend"]):
+        return """
+You are a helpful assistant. Only list relevant car names, prices, and one key feature.
+Do NOT include reasoning, thought processes, or long descriptions.
+Use a simple bullet list format.
+"""
+    else:
+        return """
+You are a helpful assistant that primarily uses the provided PDF content to answer questions.
+
+Your task is to:
+1. Analyze the PDF content carefully
+2. Base your answer primarily on the information found in the PDF
+3. Structure your response in a clear and organized manner
+4. Use bullet points or numbered lists for better readability
+5. Include specific prices for car recommendations
+6. Ensure student car recommendations are within RM 50,000
+7. Avoid saying "not specified in PDF, but generally..."
+
+The PDF content is your main source.
+"""
+
+
 # ----------- Ollama API Communication Logic -----------
 def call_ollama_api(prompt, context, model="llama3:8b", pdf_path=None):
     """Call the Ollama API with the specified model"""
@@ -508,29 +533,10 @@ def call_ollama_api(prompt, context, model="llama3:8b", pdf_path=None):
     
     logger.info(f"Calling Ollama API with model: {model}")
     
-    # Prepare messages with balanced instructions
     messages = [
         {
             "role": "system",
-            "content": f"""You are a helpful assistant that primarily uses the provided content to answer questions, while also providing relevant additional information when helpful.
-
-You have access to the following context: {context}
-
-Your task is to:
-1. First, analyze the content carefully
-2. Base your answer primarily on the information found in the content
-3. If the content is limited, you can supplement with relevant general knowledge
-4. Clearly indicate which information comes from the content and which is additional context
-5. Structure your response in a clear and organized manner
-6. Use bullet points or numbered lists for better readability
-7. For car recommendations, always include specific prices
-8. If making car recommendations for students, ensure they are within the student budget of RM 50,000
-9. Always suggest cars that are in the content
-10. All BYD cars are Electric cars
-11. All Proton cars are Petrol cars
-12. Please don't mention that something "not specified in the content, but according to general knowledge"
-
-Remember: The content is your main source, but you can enhance the response with relevant additional information when it helps provide a more complete answer."""
+            "content": build_system_prompt(prompt)
         },
         {
             "role": "user",
@@ -538,6 +544,8 @@ Remember: The content is your main source, but you can enhance the response with
         }
     ]
     
+    # ... rest of your existing API request logic ...
+
     # Prepare the request payload
     payload = {
         "model": model,
