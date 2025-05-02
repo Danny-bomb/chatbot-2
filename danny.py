@@ -504,29 +504,22 @@ def get_pdf_image(pdf_path):
 def build_system_prompt(user_prompt):
     if any(kw in user_prompt.lower() for kw in ["just list", "no explanation", "short answer", "only recommend", "budget friendly cars"]):
         return """
-You are a helpful assistant. Only list relevant car names, prices, and one key feature.
-Do NOT include reasoning, thought processes, or descriptions of how you're thinking.
-Do NOT include <think> tags or internal reflections.
-Use a simple bullet list format.
+You are a helpful assistant.
 
-Example format:
+ONLY return the final list in this format:
 - Car Name
   - Price: RM xx,xxx
   - Key Feature: ...
+
+❌ DO NOT include:
+- <think> sections
+- Reflections, reasoning, or commentary
+- Markdown headings, summaries, or intro text
+
+ONLY return the list. Nothing else.
 """
     else:
-        return """
-You are a helpful assistant that primarily uses the provided PDF content to answer questions.
-
-Your task is to:
-1. Analyze the PDF content carefully
-2. Base your answer primarily on the information found in the PDF
-3. Structure your response in a clear and organized manner
-4. Use bullet points or numbered lists for better readability
-5. Include specific prices for car recommendations
-6. Ensure student car recommendations are within RM 50,000
-7. Avoid saying "not specified in PDF, but generally..."
-"""
+        return """[your existing detailed system prompt here]"""
 
 
 
@@ -542,10 +535,11 @@ def call_ollama_api(prompt, context, model="llama3:8b", pdf_path=None):
             "role": "system",
             "content": build_system_prompt(prompt)
         },
-        {
-            "role": "user",
-            "content": f"Please provide only the final answer. Do NOT include <think> sections or internal thought processes. Format your response like a bullet list: {prompt}"
-        }
+{
+    "role": "user",
+    "content": f"ONLY provide the list below. NO <think> tags. NO commentary. NO explanation. Format strictly:\n\n- Car Name\n  - Price: RM xx,xxx\n  - Key Feature: ...\n\n{prompt}"
+}
+
     ]
     
     # ... rest of your existing API request logic ...
