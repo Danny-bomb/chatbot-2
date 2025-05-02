@@ -526,24 +526,31 @@ ONLY return the list. Nothing else.
 def call_ollama_api(prompt, context, model="llama3:8b", pdf_path=None):
     """Call the Ollama API with the specified model"""
     API_URL = "http://127.0.0.1:11434/api/chat"
-    
+
     logger.info(f"Calling Ollama API with model: {model}")
-    
+
     messages = [
         {
             "role": "system",
             "content": build_system_prompt(prompt)
         },
-{
-    "role": "user",
-    "content": f"ONLY provide the list below. NO <think> tags. NO commentary. NO explanation. Format strictly:\n\n- Car Name\n  - Price: RM xx,xxx\n  - Key Feature: ...\n\n{prompt}"
-}
-
+        {
+            "role": "user",
+            "content": f"ONLY provide the list below. NO <think> tags. NO commentary. NO explanation. Format strictly:\n\n- Car Name\n  - Price: RM xx,xxx\n  - Key Feature: ...\n\n{prompt}"
+        }
     ]
-    
-    # ... rest of your existing API request logic ...
 
-    # Prepare the request payload
+    # Timeout strategy based on model size
+    if model == "llama3:8b":
+        timeout = 180
+    elif model == "mistral:latest":
+        timeout = 90
+    elif model == "deepseek-r1:1.5b":
+        timeout = 60
+    else:
+        timeout = 60
+
+    # Request payload
     payload = {
         "model": model,
         "messages": messages,
@@ -554,28 +561,24 @@ def call_ollama_api(prompt, context, model="llama3:8b", pdf_path=None):
             "num_predict": 2048
         }
     }
-    
+
     try:
         logger.info(f"Sending request to Ollama API at {API_URL}")
-        # Adjust timeout based on model size
-        timeout = 180 if model == "llama3:8b" else 60
         response = requests.post(API_URL, json=payload, timeout=(timeout, timeout))
         logger.info(f"Ollama API response status: {response.status_code}")
-        
+
         if response.status_code == 200:
             data = response.json()
             logger.info("Received successful response from Ollama")
-            
-            # Handle different API response formats
+
             if "message" in data:
-                response_text = data["message"]["content"]
+                return data["message"].get("content", "")
             elif "response" in data:
-                response_text = data["response"]
+                return data["response"]
             else:
                 logger.warning("Unexpected response format from Ollama")
                 return "No response from Ollama"
-            
-            return response_text
+
         else:
             error_msg = f"Ollama API error: {response.status_code}"
             logger.error(error_msg)
@@ -583,21 +586,25 @@ def call_ollama_api(prompt, context, model="llama3:8b", pdf_path=None):
                 logger.error(f"Response text: {response.text}")
             st.error(error_msg)
             return f"Error: {response.status_code}"
+
     except requests.exceptions.ConnectTimeout:
         error_msg = "Connection timeout when connecting to Ollama server. Make sure it's running."
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
+
     except requests.exceptions.ReadTimeout:
-        error_msg = f"Request timed out after {timeout} seconds. The {model} model may be too large for your system or taking too long to process. Try using a smaller model like deepseek-r1:1.5b."
+        error_msg = f"Request timed out after {timeout} seconds. The {model} model may be too large or slow. Try using a smaller model like deepseek-r1:1.5b."
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
+
     except requests.exceptions.ConnectionError:
         error_msg = "Could not connect to Ollama server at 127.0.0.1:11434. Make sure it's running with 'ollama serve'."
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
+
     except Exception as e:
         error_msg = f"Error calling Ollama: {str(e)}"
         logger.error(error_msg)
