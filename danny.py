@@ -783,55 +783,6 @@ if prompt := st.chat_input("Ask me anything..."):
 
 #------------------Metrics---------------------------------------------------
 
-# Assuming you have already imported necessary libraries in your original code
-
-# Define evaluation queries and true answers (Car-specific knowledge queries)
-queries = [
-    "What engine does the Honda Civic 1.5L RS use?",
-    "What is the fuel consumption of the Civic e:HEV RS?",
-    "Does the Civic support Honda Sensing?",
-]
-
-true_answers = [
-    "1.5L VTEC Turbo engine",
-    "4.0L/100km",
-    "Yes, Honda Sensing is included"
-]
-
-# Function to get the chatbot's response (replace with your chatbot logic)
-def ask_chatbot(query):
-    # Assuming response_generator is your chatbot's function
-    response = response_generator(extracted_text, query, pdf_path=None)  # Adjust as needed
-    return response['answer']
-
-# Get predicted answers for the evaluation queries
-predicted_answers = [ask_chatbot(query) for query in queries]
-
-# Calculate evaluation metrics
-binary_true = [1] * len(true_answers)  # All answers are "correct" by definition
-binary_pred = [1 if true.lower() in pred.lower() else 0 for true, pred in zip(true_answers, predicted_answers)]
-
-# Calculate the metrics
-accuracy = accuracy_score(binary_true, binary_pred)
-precision = precision_score(binary_true, binary_pred)
-recall = recall_score(binary_true, binary_pred)
-f1 = f1_score(binary_true, binary_pred)
-
-# Display evaluation results
-st.subheader("Evaluation Results")
-
-# Show the metrics table
-st.table({
-    "Metric": ["Accuracy", "F1 Score", "Recall", "Precision"],
-    "Score": [accuracy, f1, recall, precision]
-})
-
-# Show individual results for each query
-for i, (q, true, pred) in enumerate(zip(queries, true_answers, predicted_answers)):
-    st.write(f"**Q{i+1}:** {q}")
-    st.write(f"- Ground Truth: {true}")
-    st.write(f"- Predicted: {pred}")
-
 # Your original code for uploading and interacting with the PDF
 st.title("Car Knowledge Chatbot")
 
@@ -847,6 +798,45 @@ if uploaded_pdf:
     if user_question:
         answer = response_generator(extracted_text, user_question, pdf_path=uploaded_pdf)
         st.write(f"**Answer:** {answer['answer']}")
+
+    queries = [
+        "What engine does the Honda Civic 1.5L RS use?",
+        "What is the fuel consumption of the Civic e:HEV RS?",
+        "Does the Civic support Honda Sensing?",
+    ]
+
+    true_answers = [
+        "1.5L VTEC Turbo engine",
+        "4.0L/100km",
+        "Yes, Honda Sensing is included"
+    ]
+
+    def ask_chatbot(query):
+        response = response_generator(extracted_text, query, pdf_path=None)
+        return response['answer']
+
+    predicted_answers = [ask_chatbot(query) for query in queries]
+
+    binary_true = [1] * len(true_answers)
+    binary_pred = [1 if true.lower() in pred.lower() else 0 for true, pred in zip(true_answers, predicted_answers)]
+
+    accuracy = accuracy_score(binary_true, binary_pred)
+    precision = precision_score(binary_true, binary_pred, zero_division=0)
+    recall = recall_score(binary_true, binary_pred, zero_division=0)
+    f1 = f1_score(binary_true, binary_pred, zero_division=0)
+
+    st.subheader("Evaluation Results")
+    st.table({
+        "Metric": ["Accuracy", "F1 Score", "Recall", "Precision"],
+        "Score": [accuracy, f1, recall, precision]
+    })
+
+    for i, (q, true, pred) in enumerate(zip(queries, true_answers, predicted_answers)):
+        st.write(f"**Q{i+1}:** {q}")
+        st.write(f"- Ground Truth: {true}")
+        st.write(f"- Predicted: {pred}")
+
+
 
 
 
