@@ -480,8 +480,8 @@ def response_generator(text, prompt, pdf_path=None):
                 logger.info(f"Using Ollama model: {st.session_state.ollama_model} for general question")
                 st.info("Using local Ollama model for general question.")
                 
-                if st.session_state.ollama_model == "llama3:8b":
-                    st.warning("Using the larger llama3:8b model. This may take longer to process. Please be patient.", icon="⚠️")
+                if st.session_state.ollama_model == "llama3.1:8b":
+                    st.warning("Using the larger llama3.1:8b model. This may take longer to process. Please be patient.", icon="⚠️")
                 
                 # Prepare general question prompt
                 messages = [
@@ -503,7 +503,7 @@ def response_generator(text, prompt, pdf_path=None):
                 response = requests.post(
                     "http://127.0.0.1:11434/api/chat",
                     json=payload,
-                    timeout=180 if st.session_state.ollama_model == "llama3:8b" else 60
+                    timeout=180 if st.session_state.ollama_model == "llama3.1:8b" else 60
                 )
                 
                 if response.status_code == 200:
@@ -513,10 +513,23 @@ def response_generator(text, prompt, pdf_path=None):
                     elif "response" in data:
                         return {"answer": data["response"]}
             except Exception as e:
-                st.warning(f"Error with Ollama: {e}. Falling back to OpenRouter.", icon="⚠️")
+                st.warning(f"Error with Ollama: {e}. Falling back to Ollama.", icon="⚠️")
                 logger.error(f"Exception in Ollama call: {str(e)}")
         
-       
+        # Try Ollama for general questions
+        try:
+            logger.info("Using Ollama model for general question")
+            st.info("Using local Ollama model for general question.")
+            
+            ollama_response = call_ollama_api(prompt, "", st.session_state.ollama_model, pdf_path)
+            if ollama_response and not ollama_response.startswith("Error:"):
+                return {"answer": enhance_response(ollama_response)}
+            else:
+                st.warning("No valid response from Ollama", icon="⚠️")
+                logger.warning(f"Invalid Ollama response: {ollama_response}")
+        except Exception as e:
+            st.error(f"Error processing your request: {str(e)}")
+            return {"answer": "I apologize, but I encountered an error while processing your request. Please try again later."}
     
     # Handle PDF-based questions (existing logic)
     context, missing_info, source_doc, page_number = fuzzy_match_query(text, prompt)
@@ -541,35 +554,18 @@ def response_generator(text, prompt, pdf_path=None):
             logger.info(f"Using Ollama model: {st.session_state.ollama_model}")
             st.info("Using local Ollama model. Responses will be based on the PDF content.")
             
-            if st.session_state.ollama_model == "llama3:8b":
-                st.warning("Using the larger llama3:8b model. This may take longer to process. Please be patient.", icon="⚠️")
+            if st.session_state.ollama_model == "llama3.1:8b":
+                st.warning("Using the larger llama3.1:8b model. This may take longer to process. Please be patient.", icon="⚠️")
             
             ollama_response = call_ollama_api(prompt, context, st.session_state.ollama_model, pdf_path)
             if ollama_response and not ollama_response.startswith("Error:") and not ollama_response.startswith("Could not connect"):
-                return {"answer": enhance_response(ollama_response, source_doc, page_number)}
+                return {"answer": enhance_response(ollama_response)}
             else:
-                st.warning("No valid response from Ollama, falling back to OpenRouter", icon="⚠️")
+                st.warning("No valid response from Ollama", icon="⚠️")
                 logger.warning(f"Invalid Ollama response: {ollama_response}")
         except Exception as e:
-            st.warning(f"Error with Ollama: {e}. Falling back to OpenRouter.", icon="⚠️")
+            st.warning(f"Error with Ollama: {e}. Falling back to Ollama.", icon="⚠️")
             logger.error(f"Exception in Ollama call: {str(e)}")
-    
-    if st.session_state.selected_model == "OpenRouter" or (st.session_state.selected_model == "Local Ollama" and ('ollama_response' not in locals() or 
-                                                                              (ollama_response and (ollama_response.startswith("Error:") or 
-                                                                                                 ollama_response.startswith("Could not connect"))))):
-        try:
-            logger.info("Using OpenRouter API with deepseek model")
-            st.info("Using OpenRouter deepseek model. Responses will be based on the PDF content.")
-            
-            openrouter_response = call_openrouter_api(prompt, context, pdf_path)
-            if openrouter_response and not openrouter_response.startswith("Error:"):
-                return {"answer": enhance_response(openrouter_response, source_doc, page_number)}
-            else:
-                st.warning("No valid response from OpenRouter", icon="⚠️")
-                logger.warning(f"Invalid OpenRouter response: {openrouter_response}")
-        except Exception as e:
-            st.warning(f"Error with OpenRouter: {e}", icon="⚠️")
-            logger.error(f"Exception in OpenRouter call: {str(e)}")
     
     return {"answer": "I apologize, but I couldn't process your request at this time. Please try again later."}
 
