@@ -244,10 +244,12 @@ if uploaded_files:
 #----------summarization--------------
 def summarize_pdf(full_text, model_name):
     prompt = (
-        "You are a helpful assistant. Please summarize the following document "
-        "in a concise, informative paragraph:\n\n" + full_text[:4000]  # Truncate if too long
+        "Summarize the following document into clear, concise bullet points. "
+        "Focus only on key factual information. Do not include opinions, commentary, or analysis.\n\n"
+        + full_text[:4000]
     )
     return response_generator(full_text[:4000], prompt, model_name)
+
 
 
 # ----------- Response Enhancement Function -----------
@@ -641,10 +643,13 @@ if prompt := st.chat_input("Ask me anything..."):
 
 #view extracted text
 if extracted_text:
-    with st.expander("📄 Summarize All PDFs"):
-        if st.button("Summarize Documents"):
-            with st.spinner("Generating summary..."):
-                summary = summarize_pdf(extracted_text, selected_model)  # Use your variable
-                st.markdown("### 📝 Summary")
-                st.write(summary)
+    with st.expander("View Extracted Text"):
+        st.text_area("Extracted Text", extracted_text, height=300)
+            with st.expander("📄 Summarize All PDFs"):
+                if st.button("Summarize Documents"):
+                    with st.spinner("Generating summary..."):
+                        summary = summarize_pdf(extracted_text, selected_model)  # Use your chosen model
+                        st.markdown("### 📝 Summary")
+                        st.write(summary)
+
 
