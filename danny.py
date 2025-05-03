@@ -558,6 +558,8 @@ def response_generator(text, prompt, pdf_path=None):
     
     return {"answer": "I apologize, but I couldn't process your request at this time. Please try again later."}
 
+
+
 # ----------- Streamlit Chat UI and Interaction Logic -----------
 st.title("PDF Chat Assistant")
 
