@@ -9,7 +9,6 @@ from io import BytesIO
 import json
 import logging
 from dotenv import load_dotenv
-from gtts import gTTS 
 
 # Load environment variables from .env file
 load_dotenv()
@@ -17,34 +16,6 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger('PDFChat')
-
-# ----------- Text-to-Speech Function ----------- 
-def text_to_speech(text):
-    """Convert text to speech and return audio in base64 format"""
-    try:
-        tts = gTTS(text=text, lang='en')  # You can change the language here if needed
-        
-        # Save the audio to a temporary file
-        audio_file = "temp_audio.mp3"
-        tts.save(audio_file)
-        
-        # Read the audio file into a BytesIO object
-        audio = io.BytesIO()
-        with open(audio_file, 'rb') as f:
-            audio.write(f.read())
-        audio.seek(0)  # Rewind the file pointer to the beginning
-        
-        # Convert audio to base64 for embedding in Streamlit
-        audio_base64 = base64.b64encode(audio.read()).decode()
-        
-        # Optionally, remove the temporary audio file after conversion
-        os.remove(audio_file)
-        
-        return f"data:audio/mp3;base64,{audio_base64}"
-    
-    except Exception as e:
-        return f"Error generating speech: {str(e)}"
-
 
 
 # ----------- Upload Folder Setup -----------
@@ -86,9 +57,8 @@ st.sidebar.markdown("""
 
 ### ⚙️ Model Options
 - **Local Ollama**: 
-  - llama3:8b: More powerful but slower
+  - llama3.1:8b: More powerful but slower
   - deepseek-r1:1.5b: Faster responses
-  - mistral:lastest: good mix of power and speed
 
 ### 💡 Tips
 - Upload PDFs for specific document-based answers
@@ -96,36 +66,6 @@ st.sidebar.markdown("""
 - Be specific in your questions for better answers
 - Check the model status in the sidebar
 """)
-
-
-# Keep track of the number of messages using session state
-if 'message_count' not in st.session_state:
-    st.session_state.message_count = 0
-
-# Increment the counter to create unique keys
-chat_input_key = f"chat_input_{st.session_state.message_count}"
-st.session_state.message_count += 1
-
-# Use the unique key
-if prompt := st.chat_input("Ask me anything...", key=chat_input_key):
-    # Display user message
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    # Example response generation logic
-    response_text = "This is a text-to-speech test."
-
-    # Display assistant response
-    with st.chat_message("assistant"):
-        st.markdown(response_text)
-
-    # Add a button to trigger text-to-speech
-    if st.button("Play Speech"):
-        audio_base64 = text_to_speech(response_text)  # Generate the speech
-        st.audio(audio_base64, format="audio/mp3")    # Play the speech
-
-
-
 
 # ----------- Ollama Connection Check -----------
 if st.session_state.selected_model == "Local Ollama":
