@@ -588,10 +588,6 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
 # Handle user input
 if prompt := st.chat_input("Ask me anything..."):
     with st.chat_message("user"):
