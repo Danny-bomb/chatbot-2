@@ -603,12 +603,12 @@ if "messages" not in st.session_state:
         "content": "Hello! I'm your PDF Chat Assistant. How can I help you today? 😊"
     })
 
-#  Render chat history (ONLY ONCE)
+# Render chat history (ONLY ONCE)
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-#  Handle user input
+# Handle user input
 if prompt := st.chat_input("Ask me anything..."):
     # Display user message
     with st.chat_message("user"):
@@ -639,6 +639,7 @@ if prompt := st.chat_input("Ask me anything..."):
     # Display assistant response
     with st.chat_message("assistant"):
         st.markdown(response_text)
+
     st.session_state.messages.append({"role": "assistant", "content": response_text})
 
 # View extracted text
@@ -652,6 +653,3 @@ if extracted_text:
                 summary = summarize_pdf(extracted_text, selected_model)  # Use your chosen model
                 st.markdown("### 📝 Summary")
                 st.write(summary)
-
-
-
