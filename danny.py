@@ -382,62 +382,76 @@ ONLY return the list. Nothing else.
 
 
 # ----------- Ollama API Communication Logic -----------
-def call_ollama_api(prompt, context, model="llama3:8b", pdf_path=None):
+def call_ollama_api(prompt, context, model="llama3.1:8b", pdf_path=None):
     """Call the Ollama API with the specified model"""
     API_URL = "http://127.0.0.1:11434/api/chat"
-
+    
     logger.info(f"Calling Ollama API with model: {model}")
-
+    
+    # Prepare messages with balanced instructions
     messages = [
         {
             "role": "system",
-            "content": build_system_prompt(prompt)
+            "content": f"""You are a helpful assistant that primarily uses the provided content to answer questions, while also providing relevant additional information when helpful.
+
+You have access to the following context: {context}
+
+Your task is to:
+1. First, analyze the content carefully
+2. Base your answer primarily on the information found in the content
+3. If the content is limited, you can supplement with relevant general knowledge
+4. Clearly indicate which information comes from the content and which is additional context
+5. Structure your response in a clear and organized manner
+6. Use bullet points or numbered lists for better readability
+7. For car recommendations, always include specific prices if available.
+8. Only recommend models that are in the content, no need to add on any other models.
+9. For the price in PDF, usually it is in format of RM XXX,XXX.00 , so please get the entire price, not just the last 3 digits.
+10. If the price is not specified in the content, please say "The price is not specified in the content"
+11. If mention about model, please include all model that can be found in the content.
+12. normally the price will be mentioned after "priced at" or "starting from" or "from" or "from RM" or "from RM"
+13. Premium class car will be more than RM 500,000.
+
+Remember: The content is your main source, but you can enhance the response with relevant additional information when it helps provide a more complete answer."""
         },
         {
             "role": "user",
-            "content": f"ONLY provide the list below. NO <think> tags. NO commentary. NO explanation. Format strictly:\n\n- Car Name\n  - Price: RM xx,xxx\n  - Key Feature: ...\n\n{prompt}"
+            "content": f"Please provide an answer based primarily on the content, supplemented with relevant additional information if needed. {prompt}"
         }
     ]
-
-    # Timeout strategy based on model size
-    if model == "llama3:8b":
-        timeout = 180
-    elif model == "mistral:latest":
-        timeout = 90
-    elif model == "deepseek-r1:1.5b":
-        timeout = 60
-    else:
-        timeout = 60
-
-    # Request payload
+    
+    # Prepare the request payload
     payload = {
         "model": model,
         "messages": messages,
         "stream": False,
         "options": {
-            "temperature": 0.5,
+            "temperature": 0.9,
             "top_p": 0.8,
             "num_predict": 2048
         }
     }
-
+    
     try:
         logger.info(f"Sending request to Ollama API at {API_URL}")
+        # Adjust timeout based on model size
+        timeout = 180 if model == "llama3.1:8b" else 60
         response = requests.post(API_URL, json=payload, timeout=(timeout, timeout))
         logger.info(f"Ollama API response status: {response.status_code}")
-
+        
         if response.status_code == 200:
             data = response.json()
             logger.info("Received successful response from Ollama")
-
+            
+            # Handle different API response formats
             if "message" in data:
-                return data["message"].get("content", "")
+                response_text = data["message"]["content"]
             elif "response" in data:
-                return data["response"]
+                response_text = data["response"]
             else:
                 logger.warning("Unexpected response format from Ollama")
                 return "No response from Ollama"
-
+            
+            return response_text
         else:
             error_msg = f"Ollama API error: {response.status_code}"
             logger.error(error_msg)
@@ -445,25 +459,21 @@ def call_ollama_api(prompt, context, model="llama3:8b", pdf_path=None):
                 logger.error(f"Response text: {response.text}")
             st.error(error_msg)
             return f"Error: {response.status_code}"
-
     except requests.exceptions.ConnectTimeout:
         error_msg = "Connection timeout when connecting to Ollama server. Make sure it's running."
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
-
     except requests.exceptions.ReadTimeout:
-        error_msg = f"Request timed out after {timeout} seconds. The {model} model may be too large or slow. Try using a smaller model like deepseek-r1:1.5b."
+        error_msg = f"Request timed out after {timeout} seconds. The {model} model may be too large for your system or taking too long to process. Try using a smaller model like deepseek-r1:1.5b."
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
-
     except requests.exceptions.ConnectionError:
         error_msg = "Could not connect to Ollama server at 127.0.0.1:11434. Make sure it's running with 'ollama serve'."
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
-
     except Exception as e:
         error_msg = f"Error calling Ollama: {str(e)}"
         logger.error(error_msg)
