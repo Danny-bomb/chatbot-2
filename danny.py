@@ -87,7 +87,7 @@ if st.session_state.selected_model == "Local Ollama":
         st.session_state.ollama_model = "llama3:8b"
     ollama_model = st.sidebar.selectbox(   
         "Choose Ollama Model",
-        ["llama3:8b", "deepseek-r1:1.5b", "mistral:latest"], 
+        ["llama3:8b", "deepseek-r1:1.5b", "gemma3:1b"], 
         index=0,
         key="ollama_model_selector"
     )
