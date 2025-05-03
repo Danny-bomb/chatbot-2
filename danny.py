@@ -361,31 +361,40 @@ def get_pdf_image(pdf_path):
 
 
 # ----------- Ollama API Communication Logic ----------- 
-# ----------- Ollama API Communication Logic ----------- 
 def call_ollama_api(prompt, context, model="llama3.1:8b", pdf_path=None):
     """Call the Ollama API with the specified model"""
     API_URL = "http://127.0.0.1:11434/api/chat"
     
     logger.info(f"Calling Ollama API with model: {model}")
     
-    # Prepare messages with instructions for the assistant
+    # Prepare messages with balanced instructions
     messages = [
         {
             "role": "system",
-            "content": f"""You are a helpful assistant that provides responses based primarily on the content you are given. 
+            "content": f"""You are a helpful assistant that primarily uses the provided content to answer questions, while also providing relevant additional information when helpful.
+
+You have access to the following context: {context}
 
 Your task is to:
-1. Analyze the provided content carefully.
-2. Base your answer primarily on the content, supplementing with relevant general knowledge if the content is limited.
-3. Clearly distinguish between information from the content and additional context.
-4. Structure your response clearly, using bullet points or numbered lists when appropriate.
-5. Ensure prices, if mentioned, are included in the format RM XXX,XXX.00.
-6. Only recommend car models that are explicitly mentioned in the content.
-7. Follow the instructions for content sources carefully, such as extracting prices formatted as "RM XXX,XXX.00", and identifying any premium cars (over RM 500,000)."""
+1. First, analyze the content carefully
+2. Base your answer primarily on the information found in the content
+3. If the content is limited, you can supplement with relevant general knowledge
+4. Clearly indicate which information comes from the content and which is additional context
+5. Structure your response in a clear and organized manner
+6. Use bullet points or numbered lists for better readability
+7. For car recommendations, always include specific prices if available.
+8. Only recommend models that are in the content, no need to add on any other models.
+9. For the price in PDF, usually it is in format of RM XXX,XXX.00 , so please get the entire price, not just the last 3 digits.
+10. If the price is not specified in the content, please say "The price is not specified in the content"
+11. If mention about model, please include all model that can be found in the content.
+12. normally the price will be mentioned after "priced at" or "starting from" or "from" or "from RM" or "from RM"
+13. Premium class car will be more than RM 500,000.
+
+Remember: The content is your main source, but you can enhance the response with relevant additional information when it helps provide a more complete answer."""
         },
         {
             "role": "user",
-            "content": f"Please provide an answer based on the context, supplemented with relevant additional information if needed. {prompt}"
+            "content": f"Please provide an answer based primarily on the content, supplemented with relevant additional information if needed. {prompt}"
         }
     ]
     
@@ -440,7 +449,7 @@ Your task is to:
         st.error(error_msg)
         return error_msg
     except requests.exceptions.ConnectionError:
-        error_msg = "Could not connect to Ollama server at 127.0.1:11434. Make sure it's running with 'ollama serve'."
+        error_msg = "Could not connect to Ollama server at 127.0.0.1:11434. Make sure it's running with 'ollama serve'."
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
@@ -450,6 +459,104 @@ Your task is to:
         st.error(error_msg)
         return error_msg
 
+# ----------- Central Response Generator with Model Fallback Logic -----------
+def response_generator(text, prompt, pdf_path=None):
+    # Check if there's any PDF content
+    if not text or text.strip() == "":
+        # Handle general questions without PDF context
+        if st.session_state.selected_model == "Local Ollama":
+            try:
+                logger.info(f"Using Ollama model: {st.session_state.ollama_model} for general question")
+                st.info("Using local Ollama model for general question.")
+                
+                if st.session_state.ollama_model == "llama3.1:8b":
+                    st.warning("Using the larger llama3.1:8b model. This may take longer to process. Please be patient.", icon="⚠️")
+                
+                # Prepare general question prompt
+                messages = [
+                    {"role": "system", "content": "You are a helpful assistant that provides informative and detailed answers to questions. Be natural and conversational in your responses."},
+                    {"role": "user", "content": prompt}
+                ]
+                
+                payload = {
+                    "model": st.session_state.ollama_model,
+                    "messages": messages,
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "num_predict": 1024
+                    }
+                }
+                
+                response = requests.post(
+                    "http://127.0.0.1:11434/api/chat",
+                    json=payload,
+                    timeout=180 if st.session_state.ollama_model == "llama3.1:8b" else 60
+                )
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if "message" in data:
+                        return {"answer": data["message"]["content"]}
+                    elif "response" in data:
+                        return {"answer": data["response"]}
+            except Exception as e:
+                st.warning(f"Error with Ollama: {e}. Falling back to Ollama.", icon="⚠️")
+                logger.error(f"Exception in Ollama call: {str(e)}")
+        
+        # Try Ollama for general questions
+        try:
+            logger.info("Using Ollama model for general question")
+            st.info("Using local Ollama model for general question.")
+            
+            ollama_response = call_ollama_api(prompt, "", st.session_state.ollama_model, pdf_path)
+            if ollama_response and not ollama_response.startswith("Error:"):
+                return {"answer": enhance_response(ollama_response)}
+            else:
+                st.warning("No valid response from Ollama", icon="⚠️")
+                logger.warning(f"Invalid Ollama response: {ollama_response}")
+        except Exception as e:
+            st.error(f"Error processing your request: {str(e)}")
+            return {"answer": "I apologize, but I encountered an error while processing your request. Please try again later."}
+    
+    # Handle PDF-based questions (existing logic)
+    context, missing_info, source_doc, page_number = fuzzy_match_query(text, prompt)
+    
+    # Check if the question is not within the PDF content
+    if "content not found in PDF" in missing_info:
+        return {
+            "answer": "I'd be happy to help with that! While I don't have specific information about this in the uploaded documents, I can provide some general information on the topic.",
+            "needs_info": True
+        }
+    
+    # Ask for more info if needed
+    if missing_info and len(missing_info) > 0:
+        return {
+            "answer": f"I'd like to help, but I need more information about the {', '.join(missing_info)} to give you a proper answer. Could you please provide more details?",
+            "needs_info": True
+        }
+    
+    # Use selected model for PDF-based questions
+    if st.session_state.selected_model == "Local Ollama":
+        try:
+            logger.info(f"Using Ollama model: {st.session_state.ollama_model}")
+            st.info("Using local Ollama model. Responses will be based on the PDF content.")
+            
+            if st.session_state.ollama_model == "llama3.1:8b":
+                st.warning("Using the larger llama3.1:8b model. This may take longer to process. Please be patient.", icon="⚠️")
+            
+            ollama_response = call_ollama_api(prompt, context, st.session_state.ollama_model, pdf_path)
+            if ollama_response and not ollama_response.startswith("Error:") and not ollama_response.startswith("Could not connect"):
+                return {"answer": enhance_response(ollama_response)}
+            else:
+                st.warning("No valid response from Ollama", icon="⚠️")
+                logger.warning(f"Invalid Ollama response: {ollama_response}")
+        except Exception as e:
+            st.warning(f"Error with Ollama: {e}. Falling back to Ollama.", icon="⚠️")
+            logger.error(f"Exception in Ollama call: {str(e)}")
+    
+    return {"answer": "I apologize, but I couldn't process your request at this time. Please try again later."}
 
 
 # ----------- Streamlit Chat UI and Interaction Logic -----------
