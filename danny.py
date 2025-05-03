@@ -359,41 +359,32 @@ def get_pdf_image(pdf_path):
 
 
 
-# ----------- Ollama API Communication Logic -----------
+
+# ----------- Ollama API Communication Logic ----------- 
 def call_ollama_api(prompt, context, model="llama3.1:8b", pdf_path=None):
     """Call the Ollama API with the specified model"""
     API_URL = "http://127.0.0.1:11434/api/chat"
     
     logger.info(f"Calling Ollama API with model: {model}")
     
-    # Prepare messages with balanced instructions
+    # Prepare messages with instructions for the assistant
     messages = [
         {
             "role": "system",
-            "content": f"""You are a helpful assistant that primarily uses the provided content to answer questions, while also providing relevant additional information when helpful.
-
-You have access to the following context: {context}
+            "content": f"""You are a helpful assistant that provides responses based primarily on the content you are given. 
 
 Your task is to:
-1. First, analyze the content carefully
-2. Base your answer primarily on the information found in the content
-3. If the content is limited, you can supplement with relevant general knowledge
-4. Clearly indicate which information comes from the content and which is additional context
-5. Structure your response in a clear and organized manner
-6. Use bullet points or numbered lists for better readability
-7. For car recommendations, always include specific prices if available.
-8. Only recommend models that are in the content, no need to add on any other models.
-9. For the price in PDF, usually it is in format of RM XXX,XXX.00 , so please get the entire price, not just the last 3 digits.
-10. If the price is not specified in the content, please say "The price is not specified in the content"
-11. If mention about model, please include all model that can be found in the content.
-12. normally the price will be mentioned after "priced at" or "starting from" or "from" or "from RM" or "from RM"
-13. Premium class car will be more than RM 500,000.
-
-Remember: The content is your main source, but you can enhance the response with relevant additional information when it helps provide a more complete answer."""
+1. Analyze the provided content carefully.
+2. Base your answer primarily on the content, supplementing with relevant general knowledge if the content is limited.
+3. Clearly distinguish between information from the content and additional context.
+4. Structure your response clearly, using bullet points or numbered lists when appropriate.
+5. Ensure prices, if mentioned, are included in the format RM XXX,XXX.00.
+6. Only recommend car models that are explicitly mentioned in the content.
+7. Follow the instructions for content sources carefully, such as extracting prices formatted as "RM XXX,XXX.00", and identifying any premium cars (over RM 500,000)."""
         },
         {
             "role": "user",
-            "content": f"Please provide an answer based primarily on the content, supplemented with relevant additional information if needed. {prompt}"
+            "content": f"Please provide an answer based on the context, supplemented with relevant additional information if needed. {prompt}"
         }
     ]
     
@@ -457,6 +448,7 @@ Remember: The content is your main source, but you can enhance the response with
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
+
 
 
 # ----------- Central Response Generator with Model Fallback Logic -----------
