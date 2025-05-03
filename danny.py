@@ -58,7 +58,7 @@ st.sidebar.markdown("""
 ### ⚙️ Model Options
 - **Local Ollama**: 
   - llama3.1:8b: More powerful but slower
-  - gemma3:1b: Faster responses
+  - deepseek-r1:1.5b: Faster responses
 
 ### 💡 Tips
 - Upload PDFs for specific document-based answers
@@ -87,7 +87,7 @@ if st.session_state.selected_model == "Local Ollama":
         st.session_state.ollama_model = "llama3:8b"
     ollama_model = st.sidebar.selectbox(   
         "Choose Ollama Model",
-        ["llama3:8b", "gemma3:1b", "qwen3:1.7b"], 
+        ["llama3:8b", "deepseek-r1:1.5b", "gemma3:1b"], 
         index=0,
         key="ollama_model_selector"
     )
@@ -98,7 +98,7 @@ if st.session_state.selected_model == "Local Ollama":
         st.sidebar.info("Using llama3:8b - Powerful model with excellent reasoning capabilities")
         st.sidebar.warning("This is a large model and may take longer to process. Please be patient.", icon="⚠️")
     else:
-        st.sidebar.info("Using gemma3:1b - Fast and efficient model for quick responses")
+        st.sidebar.info("Using deepseek-r1:1.5b - Fast and efficient model for quick responses")
     
     # Add a refresh button to test connection again
     if st.sidebar.button("Test Ollama Connection"):
@@ -358,9 +358,30 @@ def get_pdf_image(pdf_path):
         return None
 
 
+#-------------User Prompt----------------------------------
+
+def build_system_prompt(user_prompt):
+    if any(kw in user_prompt.lower() for kw in ["just list", "no explanation", "short answer", "only recommend", "budget friendly cars"]):
+        return """
+You are a helpful assistant.
+
+ONLY return the final list in this format:
+- Car Name
+  - Price: RM xx,xxx
+  - Key Feature: ...
+
+❌ DO NOT include:
+- <think> sections
+- Reflections, reasoning, or commentary
+- Markdown headings, summaries, or intro text
+
+ONLY return the list. Nothing else.
+"""
+    else:
+        return """[your existing detailed system prompt here]"""
 
 
-# ----------- Ollama API Communication Logic ----------- 
+# ----------- Ollama API Communication Logic -----------
 def call_ollama_api(prompt, context, model="llama3.1:8b", pdf_path=None):
     """Call the Ollama API with the specified model"""
     API_URL = "http://127.0.0.1:11434/api/chat"
@@ -436,32 +457,42 @@ Remember: The content is your main source, but you can enhance the response with
             logger.error(error_msg)
             if response.text:
                 logger.error(f"Response text: {response.text}")
+            st.error(error_msg)
             return f"Error: {response.status_code}"
     except requests.exceptions.ConnectTimeout:
         error_msg = "Connection timeout when connecting to Ollama server. Make sure it's running."
         logger.error(error_msg)
+        st.error(error_msg)
         return error_msg
     except requests.exceptions.ReadTimeout:
-        error_msg = f"Request timed out after {timeout} seconds. The {model} model may be too large for your system or taking too long to process. Try using a smaller model like gemma3:1b."
+        error_msg = f"Request timed out after {timeout} seconds. The {model} model may be too large for your system or taking too long to process. Try using a smaller model like deepseek-r1:1.5b."
         logger.error(error_msg)
+        st.error(error_msg)
         return error_msg
     except requests.exceptions.ConnectionError:
         error_msg = "Could not connect to Ollama server at 127.0.0.1:11434. Make sure it's running with 'ollama serve'."
         logger.error(error_msg)
+        st.error(error_msg)
         return error_msg
     except Exception as e:
         error_msg = f"Error calling Ollama: {str(e)}"
         logger.error(error_msg)
+        st.error(error_msg)
         return error_msg
 
 
 # ----------- Central Response Generator with Model Fallback Logic -----------
 def response_generator(text, prompt, pdf_path=None):
-    # Handle general questions without PDF context
+    # Check if there's any PDF content
     if not text or text.strip() == "":
+        # Handle general questions without PDF context
         if st.session_state.selected_model == "Local Ollama":
             try:
                 logger.info(f"Using Ollama model: {st.session_state.ollama_model} for general question")
+                st.info("Using local Ollama model for general question.")
+                
+                if st.session_state.ollama_model == "llama3.1:8b":
+                    st.warning("Using the larger llama3.1:8b model. This may take longer to process. Please be patient.", icon="⚠️")
                 
                 # Prepare general question prompt
                 messages = [
@@ -493,16 +524,22 @@ def response_generator(text, prompt, pdf_path=None):
                     elif "response" in data:
                         return {"answer": data["response"]}
             except Exception as e:
+                st.warning(f"Error with Ollama: {e}. Falling back to Ollama.", icon="⚠️")
                 logger.error(f"Exception in Ollama call: {str(e)}")
         
         # Try Ollama for general questions
         try:
+            logger.info("Using Ollama model for general question")
+            st.info("Using local Ollama model for general question.")
+            
             ollama_response = call_ollama_api(prompt, "", st.session_state.ollama_model, pdf_path)
             if ollama_response and not ollama_response.startswith("Error:"):
-                return {"answer": ollama_response}
+                return {"answer": enhance_response(ollama_response)}
             else:
+                st.warning("No valid response from Ollama", icon="⚠️")
                 logger.warning(f"Invalid Ollama response: {ollama_response}")
         except Exception as e:
+            st.error(f"Error processing your request: {str(e)}")
             return {"answer": "I apologize, but I encountered an error while processing your request. Please try again later."}
     
     # Handle PDF-based questions (existing logic)
@@ -525,17 +562,23 @@ def response_generator(text, prompt, pdf_path=None):
     # Use selected model for PDF-based questions
     if st.session_state.selected_model == "Local Ollama":
         try:
+            logger.info(f"Using Ollama model: {st.session_state.ollama_model}")
+            st.info("Using local Ollama model. Responses will be based on the PDF content.")
+            
+            if st.session_state.ollama_model == "llama3.1:8b":
+                st.warning("Using the larger llama3.1:8b model. This may take longer to process. Please be patient.", icon="⚠️")
+            
             ollama_response = call_ollama_api(prompt, context, st.session_state.ollama_model, pdf_path)
-            if ollama_response and not ollama_response.startswith("Error:"):
-                return {"answer": ollama_response}
+            if ollama_response and not ollama_response.startswith("Error:") and not ollama_response.startswith("Could not connect"):
+                return {"answer": enhance_response(ollama_response)}
             else:
+                st.warning("No valid response from Ollama", icon="⚠️")
                 logger.warning(f"Invalid Ollama response: {ollama_response}")
         except Exception as e:
+            st.warning(f"Error with Ollama: {e}. Falling back to Ollama.", icon="⚠️")
             logger.error(f"Exception in Ollama call: {str(e)}")
     
     return {"answer": "I apologize, but I couldn't process your request at this time. Please try again later."}
-
-
 
 # ----------- Streamlit Chat UI and Interaction Logic -----------
 st.title("PDF Chat Assistant")
