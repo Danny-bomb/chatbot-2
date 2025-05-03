@@ -576,17 +576,19 @@ def response_generator(text, prompt, pdf_path=None):
 # ----------- Streamlit Chat UI and Interaction Logic -----------
 st.title("PDF Chat Assistant")
 
-# Add initial greeting if no messages
+# Add initial greeting only if "messages" is not yet in session state
 if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "assistant", "content": "Hello! I'm your PDF Chat Assistant. How can I help you today? 😊"}
-    ]
+    st.session_state.messages = []
+    # Add greeting here only once
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": "Hello! I'm your PDF Chat Assistant. How can I help you today? 😊"
+    })
 
-# Now render messages
+# Render chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
-
 
 # Handle user input
 if prompt := st.chat_input("Ask me anything..."):
@@ -595,30 +597,29 @@ if prompt := st.chat_input("Ask me anything..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
     # Basic interaction handling
-    if "hello" in prompt.lower() or "hi" in prompt.lower():
+    lower_prompt = prompt.lower()
+    if "hello" in lower_prompt or "hi" in lower_prompt:
         response_text = "Hi there! How can I assist you today?"
-    elif "how are you" in prompt.lower():
+    elif "how are you" in lower_prompt:
         response_text = "I'm just a program, but I'm here to help you! What do you need assistance with?"
-    elif "help" in prompt.lower():
+    elif "help" in lower_prompt:
         response_text = "You can ask me questions about the PDFs you upload or general inquiries. Just type your question!"
-    elif "bye" in prompt.lower() or "goodbye" in prompt.lower():
+    elif "bye" in lower_prompt or "goodbye" in lower_prompt:
         response_text = "Goodbye! Have a great day! 😊"
     else:
-        # Handle PDF path only if files are uploaded
         pdf_path = None
         if uploaded_files and len(uploaded_files) > 0:
             pdf_path = os.path.join(upload_folder, uploaded_files[0].name)
         
         with st.spinner("Processing your question..."):
             response = response_generator(extracted_text if extracted_text else "", prompt, pdf_path)
-        
         response_text = response['answer']
 
     with st.chat_message("assistant"):
         st.markdown(response_text)
     st.session_state.messages.append({"role": "assistant", "content": response_text})
 
-# Add an expander to view extracted text
+# Show extracted text (optional)
 if extracted_text:
     with st.expander("View Extracted Text"):
         st.text_area("Extracted Text", extracted_text, height=300)
