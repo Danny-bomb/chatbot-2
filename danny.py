@@ -361,6 +361,7 @@ def get_pdf_image(pdf_path):
 
 
 # ----------- Ollama API Communication Logic ----------- 
+# ----------- Ollama API Communication Logic ----------- 
 def call_ollama_api(prompt, context, model="llama3.1:8b", pdf_path=None):
     """Call the Ollama API with the specified model"""
     API_URL = "http://127.0.0.1:11434/api/chat"
@@ -439,7 +440,7 @@ Your task is to:
         st.error(error_msg)
         return error_msg
     except requests.exceptions.ConnectionError:
-        error_msg = "Could not connect to Ollama server at 127.0.0.1:11434. Make sure it's running with 'ollama serve'."
+        error_msg = "Could not connect to Ollama server at 127.0.1:11434. Make sure it's running with 'ollama serve'."
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
@@ -448,107 +449,6 @@ Your task is to:
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
-
-
-
-# ----------- Central Response Generator with Model Fallback Logic -----------
-def response_generator(text, prompt, pdf_path=None):
-    # Check if there's any PDF content
-    if not text or text.strip() == "":
-        # Handle general questions without PDF context
-        if st.session_state.selected_model == "Local Ollama":
-            try:
-                logger.info(f"Using Ollama model: {st.session_state.ollama_model} for general question")
-                st.info("Using local Ollama model for general question.")
-                
-                if st.session_state.ollama_model == "llama3.1:8b":
-                    st.warning("Using the larger llama3.1:8b model. This may take longer to process. Please be patient.", icon="⚠️")
-                
-                # Prepare general question prompt
-                messages = [
-                    {"role": "system", "content": "You are a helpful assistant that provides informative and detailed answers to questions. Be natural and conversational in your responses."},
-                    {"role": "user", "content": prompt}
-                ]
-                
-                payload = {
-                    "model": st.session_state.ollama_model,
-                    "messages": messages,
-                    "stream": False,
-                    "options": {
-                        "temperature": 0.7,
-                        "top_p": 0.9,
-                        "num_predict": 1024
-                    }
-                }
-                
-                response = requests.post(
-                    "http://127.0.0.1:11434/api/chat",
-                    json=payload,
-                    timeout=180 if st.session_state.ollama_model == "llama3.1:8b" else 60
-                )
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    if "message" in data:
-                        return {"answer": data["message"]["content"]}
-                    elif "response" in data:
-                        return {"answer": data["response"]}
-            except Exception as e:
-                st.warning(f"Error with Ollama: {e}. Falling back to Ollama.", icon="⚠️")
-                logger.error(f"Exception in Ollama call: {str(e)}")
-        
-        # Try Ollama for general questions
-        try:
-            logger.info("Using Ollama model for general question")
-            st.info("Using local Ollama model for general question.")
-            
-            ollama_response = call_ollama_api(prompt, "", st.session_state.ollama_model, pdf_path)
-            if ollama_response and not ollama_response.startswith("Error:"):
-                return {"answer": enhance_response(ollama_response)}
-            else:
-                st.warning("No valid response from Ollama", icon="⚠️")
-                logger.warning(f"Invalid Ollama response: {ollama_response}")
-        except Exception as e:
-            st.error(f"Error processing your request: {str(e)}")
-            return {"answer": "I apologize, but I encountered an error while processing your request. Please try again later."}
-    
-    # Handle PDF-based questions (existing logic)
-    context, missing_info, source_doc, page_number = fuzzy_match_query(text, prompt)
-    
-    # Check if the question is not within the PDF content
-    if "content not found in PDF" in missing_info:
-        return {
-            "answer": "I'd be happy to help with that! While I don't have specific information about this in the uploaded documents, I can provide some general information on the topic.",
-            "needs_info": True
-        }
-    
-    # Ask for more info if needed
-    if missing_info and len(missing_info) > 0:
-        return {
-            "answer": f"I'd like to help, but I need more information about the {', '.join(missing_info)} to give you a proper answer. Could you please provide more details?",
-            "needs_info": True
-        }
-    
-    # Use selected model for PDF-based questions
-    if st.session_state.selected_model == "Local Ollama":
-        try:
-            logger.info(f"Using Ollama model: {st.session_state.ollama_model}")
-            st.info("Using local Ollama model. Responses will be based on the PDF content.")
-            
-            if st.session_state.ollama_model == "llama3.1:8b":
-                st.warning("Using the larger llama3.1:8b model. This may take longer to process. Please be patient.", icon="⚠️")
-            
-            ollama_response = call_ollama_api(prompt, context, st.session_state.ollama_model, pdf_path)
-            if ollama_response and not ollama_response.startswith("Error:") and not ollama_response.startswith("Could not connect"):
-                return {"answer": enhance_response(ollama_response)}
-            else:
-                st.warning("No valid response from Ollama", icon="⚠️")
-                logger.warning(f"Invalid Ollama response: {ollama_response}")
-        except Exception as e:
-            st.warning(f"Error with Ollama: {e}. Falling back to Ollama.", icon="⚠️")
-            logger.error(f"Exception in Ollama call: {str(e)}")
-    
-    return {"answer": "I apologize, but I couldn't process your request at this time. Please try again later."}
 
 
 
