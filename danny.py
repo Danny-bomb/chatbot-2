@@ -98,7 +98,7 @@ st.sidebar.markdown("""
 """)
 
 # Example user input and response generation
-if prompt := st.chat_input("Ask me anything..."):
+if prompt := st.chat_input("Ask me anything...", key="chat_input_1"):  # Unique key for this input
     # Display user message
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -114,6 +114,7 @@ if prompt := st.chat_input("Ask me anything..."):
     if st.button("Play Speech"):
         audio_base64 = text_to_speech(response_text)  # Generate the speech
         st.audio(audio_base64, format="audio/mp3")    # Play the speech
+
 
 
 # ----------- Ollama Connection Check -----------
