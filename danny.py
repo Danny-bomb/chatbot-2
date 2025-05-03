@@ -97,13 +97,22 @@ st.sidebar.markdown("""
 - Check the model status in the sidebar
 """)
 
-# Example user input and response generation
-if prompt := st.chat_input("Ask me anything...", key="chat_input_1"):  # Unique key for this input
+
+# Keep track of the number of messages using session state
+if 'message_count' not in st.session_state:
+    st.session_state.message_count = 0
+
+# Increment the counter to create unique keys
+chat_input_key = f"chat_input_{st.session_state.message_count}"
+st.session_state.message_count += 1
+
+# Use the unique key
+if prompt := st.chat_input("Ask me anything...", key=chat_input_key):
     # Display user message
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # Example response generation logic (replace with your actual logic)
+    # Example response generation logic
     response_text = "This is a text-to-speech test."
 
     # Display assistant response
@@ -114,6 +123,7 @@ if prompt := st.chat_input("Ask me anything...", key="chat_input_1"):  # Unique 
     if st.button("Play Speech"):
         audio_base64 = text_to_speech(response_text)  # Generate the speech
         st.audio(audio_base64, format="audio/mp3")    # Play the speech
+
 
 
 
