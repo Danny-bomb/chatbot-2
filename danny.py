@@ -358,28 +358,6 @@ def get_pdf_image(pdf_path):
         return None
 
 
-#-------------User Prompt----------------------------------
-
-def build_system_prompt(user_prompt):
-    if any(kw in user_prompt.lower() for kw in ["just list", "no explanation", "short answer", "only recommend", "budget friendly cars"]):
-        return """
-You are a helpful assistant.
-
-ONLY return the final list in this format:
-- Car Name
-  - Price: RM xx,xxx
-  - Key Feature: ...
-
-❌ DO NOT include:
-- <think> sections
-- Reflections, reasoning, or commentary
-- Markdown headings, summaries, or intro text
-
-ONLY return the list. Nothing else.
-"""
-    else:
-        return """[your existing detailed system prompt here]"""
-
 
 # ----------- Ollama API Communication Logic -----------
 def call_ollama_api(prompt, context, model="llama3.1:8b", pdf_path=None):
