@@ -480,24 +480,6 @@ Remember: The content is your main source, but you can enhance the response with
         st.error(error_msg)
         return error_msg
 
-#-------------Clean Repeated Response------------------
-def clean_repeated_response(response_text):
-    """Remove repeated answers, especially from 'think' sections"""
-    if "<think>" in response_text:
-        # Remove anything inside <think> tags or similar unnecessary content
-        response_text = re.sub(r"<think>.*?</think>", "", response_text).strip()
-    
-    # Optionally, remove duplicates by checking for repeated content
-    lines = response_text.split("\n")
-    unique_lines = list(dict.fromkeys(lines))  # This removes duplicate lines
-    cleaned_response = "\n".join(unique_lines).strip()
-    
-    return cleaned_response
-
-# Usage example
-response_text = clean_repeated_response(response_text)
-
-
 
 # ----------- Central Response Generator with Model Fallback Logic -----------
 def response_generator(text, prompt, pdf_path=None):
