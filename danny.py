@@ -647,9 +647,11 @@ if extracted_text:
     with st.expander("View Extracted Text"):
         st.text_area("Extracted Text", extracted_text, height=300)
 
+    # Summarize PDF Section (properly indented)
     with st.expander("📄 Summarize All PDFs"):
         if st.button("Summarize Documents"):
             with st.spinner("Generating summary..."):
                 summary = summarize_pdf(extracted_text, selected_model)  # Use your chosen model
                 st.markdown("### 📝 Summary")
                 st.write(summary)
+
