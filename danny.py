@@ -641,15 +641,17 @@ if prompt := st.chat_input("Ask me anything..."):
         st.markdown(response_text)
     st.session_state.messages.append({"role": "assistant", "content": response_text})
 
-#view extracted text
+# View extracted text
 if extracted_text:
     with st.expander("View Extracted Text"):
         st.text_area("Extracted Text", extracted_text, height=300)
-            with st.expander("📄 Summarize All PDFs"):
-                if st.button("Summarize Documents"):
-                    with st.spinner("Generating summary..."):
-                        summary = summarize_pdf(extracted_text, selected_model)  # Use your chosen model
-                        st.markdown("### 📝 Summary")
-                        st.write(summary)
+
+    with st.expander("📄 Summarize All PDFs"):
+        if st.button("Summarize Documents"):
+            with st.spinner("Generating summary..."):
+                summary = summarize_pdf(extracted_text, selected_model)  # Use your chosen model
+                st.markdown("### 📝 Summary")
+                st.write(summary)
+
 
 
