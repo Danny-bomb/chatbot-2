@@ -576,8 +576,6 @@ def response_generator(text, prompt, pdf_path=None):
 # ----------- Streamlit Chat UI and Interaction Logic -----------
 st.title("PDF Chat Assistant")
 
-st.title("PDF Chat Assistant")
-
 # Add initial greeting only if not already added
 if "messages" not in st.session_state:
     st.session_state.messages = []
