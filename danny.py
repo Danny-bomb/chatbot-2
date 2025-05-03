@@ -58,7 +58,7 @@ st.sidebar.markdown("""
 ### ⚙️ Model Options
 - **Local Ollama**: 
   - llama3.1:8b: More powerful but slower
-  - deepseek-r1:1.5b: Faster responses
+  - gemma3:1b: Faster responses
 
 ### 💡 Tips
 - Upload PDFs for specific document-based answers
@@ -87,7 +87,7 @@ if st.session_state.selected_model == "Local Ollama":
         st.session_state.ollama_model = "llama3:8b"
     ollama_model = st.sidebar.selectbox(   
         "Choose Ollama Model",
-        ["llama3:8b", "deepseek-r1:1.5b", "qwen3:1.7b"], 
+        ["llama3:8b", "gemma3:1b", "qwen3:1.7b"], 
         index=0,
         key="ollama_model_selector"
     )
@@ -98,7 +98,7 @@ if st.session_state.selected_model == "Local Ollama":
         st.sidebar.info("Using llama3:8b - Powerful model with excellent reasoning capabilities")
         st.sidebar.warning("This is a large model and may take longer to process. Please be patient.", icon="⚠️")
     else:
-        st.sidebar.info("Using deepseek-r1:1.5b - Fast and efficient model for quick responses")
+        st.sidebar.info("Using gemma3:1b - Fast and efficient model for quick responses")
     
     # Add a refresh button to test connection again
     if st.sidebar.button("Test Ollama Connection"):
@@ -442,7 +442,7 @@ Remember: The content is your main source, but you can enhance the response with
         logger.error(error_msg)
         return error_msg
     except requests.exceptions.ReadTimeout:
-        error_msg = f"Request timed out after {timeout} seconds. The {model} model may be too large for your system or taking too long to process. Try using a smaller model like deepseek-r1:1.5b."
+        error_msg = f"Request timed out after {timeout} seconds. The {model} model may be too large for your system or taking too long to process. Try using a smaller model like gemma3:1b."
         logger.error(error_msg)
         return error_msg
     except requests.exceptions.ConnectionError:
