@@ -584,12 +584,12 @@ if "messages" not in st.session_state:
         "content": "Hello! I'm your PDF Chat Assistant. How can I help you today? 😊"
     })
 
-# ✅ Render chat history (ONLY ONCE)
+#  Render chat history (ONLY ONCE)
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ✅ Handle user input
+#  Handle user input
 if prompt := st.chat_input("Ask me anything..."):
     # Display user message
     with st.chat_message("user"):
@@ -608,9 +608,21 @@ if prompt := st.chat_input("Ask me anything..."):
     elif "bye" in lower_prompt:
         response_text = "Goodbye! Have a great day! 😊"
     else:
-        response_text = "This is a placeholder answer for now."
+        pdf_path = None
+        if uploaded_files and len(uploaded_files) > 0:
+            pdf_path = os.path.join(upload_folder, uploaded_files[0].name)
+
+        with st.spinner("Processing your question..."):
+            response = response_generator(extracted_text if extracted_text else "", prompt, pdf_path)
+
+        response_text = response['answer']
 
     # Display assistant response
     with st.chat_message("assistant"):
         st.markdown(response_text)
     st.session_state.messages.append({"role": "assistant", "content": response_text})
+
+#view extracted text
+if extracted_text:
+    with st.expander("View Extracted Text"):
+        st.text_area("Extracted Text", extracted_text, height=300)
