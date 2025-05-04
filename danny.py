@@ -433,11 +433,12 @@ Remember: The content is your main source, but you can enhance the response with
     
     try:
         logger.info(f"Sending request to Ollama API at {API_URL}")
-        # Adjust timeout based on model size
-        timeout = 180 if model == "llama3.1:8b" else 60
-        response = requests.post(API_URL, json=payload, timeout=(timeout, timeout))
-        logger.info(f"Ollama API response status: {response.status_code}")
-        
+    
+    # No timeout set — will wait indefinitely
+    response = requests.post(API_URL, json=payload)
+    
+    logger.info(f"Ollama API response status: {response.status_code}")
+    
         if response.status_code == 200:
             data = response.json()
             logger.info("Received successful response from Ollama")
@@ -465,7 +466,7 @@ Remember: The content is your main source, but you can enhance the response with
         st.error(error_msg)
         return error_msg
     except requests.exceptions.ReadTimeout:
-        error_msg = f"Request timed out after {timeout} seconds. The {model} model may be too large for your system or taking too long to process. Try using a smaller model like deepseek-r1:1.5b."
+        error_msg = f"Request timed out. Try using a smaller model if this keeps happening."
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
@@ -479,6 +480,7 @@ Remember: The content is your main source, but you can enhance the response with
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
+
 
 
 # ----------- Central Response Generator with Model Fallback Logic -----------
