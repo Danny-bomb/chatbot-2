@@ -613,9 +613,9 @@ if prompt := st.chat_input("Ask me anything..."):
 
     # Response logic
     lower_prompt = prompt.lower()
-    if "hello" in lower_prompt or "hi" in lower_prompt:
-        response_text = "Hi there! How can I assist you today?"
-    elif "how are you" in lower_prompt:
+    if lower_prompt.strip() in ["hello", "hi"]:
+    response_text = "Hi there! How can I assist you today?"
+
         response_text = "I'm just a program, but I'm here to help you!"
     elif "help" in lower_prompt:
         response_text = "You can ask me anything about the PDFs you upload."
