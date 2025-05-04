@@ -433,12 +433,12 @@ Remember: The content is your main source, but you can enhance the response with
     
     try:
         logger.info(f"Sending request to Ollama API at {API_URL}")
-    
-    # No timeout set — will wait indefinitely
-    response = requests.post(API_URL, json=payload)
-    
-    logger.info(f"Ollama API response status: {response.status_code}")
-    
+        
+        # No timeout set — will wait indefinitely
+        response = requests.post(API_URL, json=payload)
+        
+        logger.info(f"Ollama API response status: {response.status_code}")
+        
         if response.status_code == 200:
             data = response.json()
             logger.info("Received successful response from Ollama")
@@ -480,6 +480,7 @@ Remember: The content is your main source, but you can enhance the response with
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
+
 
 
 
