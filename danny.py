@@ -385,9 +385,9 @@ ONLY return the list. Nothing else.
 def call_ollama_api(prompt, context, model="llama3.1:8b", pdf_path=None):
     """Call the Ollama API with the specified model"""
     API_URL = "http://127.0.0.1:11434/api/chat"
-    
+
     logger.info(f"Calling Ollama API with model: {model}")
-    
+
     # Prepare messages with balanced instructions
     messages = [
         {
@@ -408,7 +408,7 @@ Your task is to:
 9. For the price in PDF, usually it is in format of RM XXX,XXX.00 , so please get the entire price, not just the last 3 digits.
 10. If the price is not specified in the content, please say "The price is not specified in the content"
 11. If mention about model, please include all model that can be found in the content.
-12. normally the price will be mentioned after "priced at" or "starting from" or "from" or "from RM" or "from RM"
+12. normally the price will be mentioned after "priced at" or "starting from" or "from" or "from RM"
 13. Premium class car will be more than RM 500,000.
 
 Remember: The content is your main source, but you can enhance the response with relevant additional information when it helps provide a more complete answer."""
@@ -418,7 +418,7 @@ Remember: The content is your main source, but you can enhance the response with
             "content": f"Please provide an answer based primarily on the content, supplemented with relevant additional information if needed. {prompt}"
         }
     ]
-    
+
     # Prepare the request payload
     payload = {
         "model": model,
@@ -430,19 +430,19 @@ Remember: The content is your main source, but you can enhance the response with
             "num_predict": 2048
         }
     }
-    
+
     try:
         logger.info(f"Sending request to Ollama API at {API_URL}")
-        
+
         # No timeout set — will wait indefinitely
         response = requests.post(API_URL, json=payload)
-        
+
         logger.info(f"Ollama API response status: {response.status_code}")
-        
+
         if response.status_code == 200:
             data = response.json()
             logger.info("Received successful response from Ollama")
-            
+
             # Handle different API response formats
             if "message" in data:
                 response_text = data["message"]["content"]
@@ -451,7 +451,7 @@ Remember: The content is your main source, but you can enhance the response with
             else:
                 logger.warning("Unexpected response format from Ollama")
                 return "No response from Ollama"
-            
+
             return response_text
         else:
             error_msg = f"Ollama API error: {response.status_code}"
@@ -460,21 +460,25 @@ Remember: The content is your main source, but you can enhance the response with
                 logger.error(f"Response text: {response.text}")
             st.error(error_msg)
             return f"Error: {response.status_code}"
+
     except requests.exceptions.ConnectTimeout:
         error_msg = "Connection timeout when connecting to Ollama server. Make sure it's running."
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
+
     except requests.exceptions.ReadTimeout:
         error_msg = f"Request timed out. Try using a smaller model if this keeps happening."
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
+
     except requests.exceptions.ConnectionError:
         error_msg = "Could not connect to Ollama server at 127.0.0.1:11434. Make sure it's running with 'ollama serve'."
         logger.error(error_msg)
         st.error(error_msg)
         return error_msg
+
     except Exception as e:
         error_msg = f"Error calling Ollama: {str(e)}"
         logger.error(error_msg)
