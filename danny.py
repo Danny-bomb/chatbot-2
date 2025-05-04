@@ -598,7 +598,7 @@ if "messages" not in st.session_state:
         "content": "Hello! I'm your PDF Chat Assistant. How can I help you today? 😊"
     })
 
-# Render chat history
+# Render chat history (ONLY ONCE)
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -642,4 +642,3 @@ if prompt := st.chat_input("Ask me anything..."):
 if extracted_text:
     with st.expander("View Extracted Text"):
         st.text_area("Extracted Text", extracted_text, height=300)
-
