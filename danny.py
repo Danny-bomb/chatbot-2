@@ -598,7 +598,7 @@ if "messages" not in st.session_state:
         "content": "Hello! I'm your PDF Chat Assistant. How can I help you today? 😊"
     })
 
-# Render chat history (ONLY ONCE)
+# Render chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -612,10 +612,11 @@ if prompt := st.chat_input("Ask me anything..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
 
     # Response logic
-    lower_prompt = prompt.lower()
-    if lower_prompt.strip() in ["hello", "hi"]:
-    response_text = "Hi there! How can I assist you today?"
+    lower_prompt = prompt.lower().strip()
 
+    if lower_prompt in ["hello", "hi"]:
+        response_text = "Hi there! How can I assist you today?"
+    elif "how are you" in lower_prompt:
         response_text = "I'm just a program, but I'm here to help you!"
     elif "help" in lower_prompt:
         response_text = "You can ask me anything about the PDFs you upload."
@@ -637,7 +638,8 @@ if prompt := st.chat_input("Ask me anything..."):
 
     st.session_state.messages.append({"role": "assistant", "content": response_text})
 
-#view extracted text
+# View extracted text
 if extracted_text:
     with st.expander("View Extracted Text"):
         st.text_area("Extracted Text", extracted_text, height=300)
+
